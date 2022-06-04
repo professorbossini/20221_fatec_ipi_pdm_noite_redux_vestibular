@@ -1,3 +1,6 @@
+const redux = require ('redux')
+const prompts = require ('prompts')
+
 //criadora de ação para realizar o vestibular
 const realizarVestibular = (nome, cpf) => {
     const entre6E10 = Math.random() <= 0.7;
@@ -34,3 +37,57 @@ const historicoMatriculas = (historicoMatriculasAtual = [], acao) => {
     }
     return historicoMatriculasAtual
 }
+
+const todosOsReducers = redux.combineReducers({
+    historicoMatriculas,
+    historicoVestibular
+})
+
+const store = redux.createStore(todosOsReducers)
+
+const main = async () => {
+    const menu = "1-Realizar Vestibular\n2-Realizar Matrícula\n3-Visualizar meu status\n4-Visualizar a lista de aprovados\n0-Sair"
+    let response
+    do{
+        response = await prompts({
+            type: "number",
+            name: "op",
+            message: menu
+        })
+        switch (response.op){
+            case 1:{
+                //1. pegar o nome do usuário
+                const { nome } = await prompts({
+                    type: 'text',
+                    name: 'nome',
+                    message: "Digite seu nome"
+                })
+                //2. pegar o cpf do usuário
+                const { cpf } = await prompts({
+                    type: 'text',
+                    name: "cpf",
+                    message: "Digite seu cpf"
+                })
+                //3. construir uma acao apropriada
+                const acao = realizarVestibular(nome, cpf)
+                //4. fazer dispatch da acao
+                store.dispatch(acao)
+                break;
+            }
+            case 2:
+                //1. pegar o cpf com prompts
+                const { cpf } = prompts({
+                    type: 'text',
+                    name: 'cpf',
+                    message: 'Digite seu cpf'
+                })
+                //2. checar se a pessoa está aprovada no estado centralizado (store.getState().historicoVestibular.find)
+                const aprovado = store.getState().historicoVestibular.find(aluno => aluno.cpf === cpf && aluno.nota >= 6)
+                //3. Produzir uma acao apropriada: o status poderá ser M ou NM
+                store.dispatch(realizarMatricula(cpf, aprovado ? "M" : "NM"))
+                break;
+        }
+
+    }while (response.op !== 0)
+}
+
